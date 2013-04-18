@@ -24,17 +24,18 @@ module ActsAsTaggableOn::Taggable
           class_eval do
             # when preserving tag order, include order option so that for a 'tags' context
             # the associations tag_taggings & tags are always returned in created order
-            has_many context_taggings, :as => :taggable,
-                                       :dependent => :destroy,
-                                       :include => :tag,
-                                       :class_name => "ActsAsTaggableOn::Tagging",
-                                       :conditions => ["#{ActsAsTaggableOn::Tagging.table_name}.context = ?", tags_type],
-                                       :order => taggings_order
+            has_many context_taggings,
+              -> { where(["#{ActsAsTaggableOn::Tagging.table_name}.context = ?", tags_type]).order(taggings_order) }, #.includes(:tag) },
+              :as => :taggable,
+              :dependent => :destroy,
+              :class_name => "ActsAsTaggableOn::Tagging"
 
-            has_many context_tags, :through => context_taggings,
-                                   :source => :tag,
-                                   :class_name => "ActsAsTaggableOn::Tag",
-                                   :order => taggings_order
+            has_many context_tags, 
+              -> { order(taggings_order) }, 
+              :through => context_taggings,
+              :source => :tag,
+              :class_name => "ActsAsTaggableOn::Tag"
+                                   
           end
 
           taggable_mixin.class_eval <<-RUBY, __FILE__, __LINE__ + 1
@@ -110,7 +111,7 @@ module ActsAsTaggableOn::Taggable
             tags = ActsAsTaggableOn::Tag.named_any(tag_list)
           end
 
-          return scoped(:conditions => "1 = 0") unless tags.length > 0
+          return empty_result unless tags.length > 0
 
           # setup taggings alias so we can chain, ex: items_locations_taggings_awesome_cool_123
           # avoid ambiguous column name

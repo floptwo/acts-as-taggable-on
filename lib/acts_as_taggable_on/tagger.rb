@@ -14,9 +14,9 @@ module ActsAsTaggableOn
       #     acts_as_tagger
       #   end
       def acts_as_tagger(opts={})
+        opts = opts.merge(:as => :tagger, :dependent => :destroy, :class_name => "ActsAsTaggableOn::Tagging")
         class_eval do
-          has_many :owned_taggings, opts.merge(:as => :tagger, :dependent => :destroy,
-                                               :include => :tag, :class_name => "ActsAsTaggableOn::Tagging")
+          has_many :owned_taggings, -> { incldues(opts[:include]) }, :as => opts[:as], :dependent => opts[:dependent], :class_name => opts[:class_name]
           has_many :owned_tags, :through => :owned_taggings, :source => :tag, :uniq => true, :class_name => "ActsAsTaggableOn::Tag"
         end
 
